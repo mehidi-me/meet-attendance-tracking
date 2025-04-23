@@ -201,6 +201,9 @@ const attendanceChecker = async (meetLink, participantName) => {
     await browser.close();
     return result;
   } catch (error) {
+    await page.screenshot({
+        path: 'hn.png',
+      });
     console.log("❌ Join button not found", error);
     await browser.close();
     return error;
