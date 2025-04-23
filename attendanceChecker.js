@@ -85,12 +85,21 @@ const isLoggedIn = async (page) => {
   return isLogged;
 };
 
- const attendanceChecker = async (meetLink, participantName) => {
+const attendanceChecker = async (meetLink, participantName) => {
   console.time();
   const browser = await puppeteer.launch({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: APP_ENV === "production",
-    args: ["--start-maximized", "--use-fake-ui-for-media-stream"],
+    args: [
+      "--start-maximized",
+      "--use-fake-ui-for-media-stream",
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--headless=new", // or --headless=chrome or --headless if needed
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--disable-software-rasterizer",
+    ],
     defaultViewport: null,
   });
 
@@ -152,8 +161,6 @@ const isLoggedIn = async (page) => {
     await browser.close();
     return error;
   }
- 
 };
-
 
 module.exports = attendanceChecker;
