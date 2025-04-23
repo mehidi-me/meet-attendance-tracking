@@ -122,10 +122,9 @@ const attendanceChecker = async (meetLink, participantName) => {
     const chrome = await chromeLauncher.launch({
       chromePath: "/usr/bin/google-chrome-stable",
       chromeFlags: [
-        "--start-maximized",
+        "--window-size=1920,1080",
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        "--start-maximized",
         "--use-fake-ui-for-media-stream",
         "--disable-gpu",
         "--disable-dev-shm-usage",
