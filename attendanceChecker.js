@@ -172,7 +172,7 @@ const attendanceChecker = async (meetLink, participantName) => {
   // Turn off mic
   try {
     await page.waitForSelector('div[jscontroller="dLMF9"]', { timeout: 8000 });
-    await page.click('div[jscontroller="dLMF9"]');
+    //await page.click('div[jscontroller="dLMF9"]');
     console.log("🎙️ Mic turned off");
   } catch {
     console.log("⚠️ Mic button not found or already off");
@@ -181,7 +181,7 @@ const attendanceChecker = async (meetLink, participantName) => {
   // Turn off camera
   try {
     await page.waitForSelector('div[jscontroller="c3SwJc"]', { timeout: 8000 });
-    await page.click('div[jscontroller="c3SwJc"]');
+   // await page.click('div[jscontroller="c3SwJc"]');
     console.log("📷 Camera turned off");
   } catch {
     console.log("⚠️ Camera button not found or already off");
