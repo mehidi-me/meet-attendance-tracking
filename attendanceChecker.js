@@ -104,6 +104,9 @@ const attendanceChecker = async (meetLink, participantName) => {
   });
 
   const page = await browser.newPage();
+  
+   // 👇 Set your desired User-Agent string here
+   await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36');
 
   const hasCookies = await loadCookies(page);
 
