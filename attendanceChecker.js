@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const axios = require("axios");
-const Xvfb = require("xvfb");
+
 const fs = require("fs").promises;
 require("dotenv").config();
 
@@ -9,6 +9,7 @@ const APP_ENV = process.env.APP_ENV;
 const EMAIL = process.env.EMAIL_ID;
 const PASSWORD = process.env.EMAIL_PASSWORD;
 const COOKIES_PATH = "./cookies.json";
+const platform = process.env.PLATFORM;
 
 const stealth = StealthPlugin();
 stealth.enabledEvasions.delete("iframe.contentWindow");
@@ -75,6 +76,7 @@ const loginWithEmail = async (page) => {
   await page.type('input[type="password"]', PASSWORD, { delay: 50 });
   await page.click("#passwordNext");
   await page.waitForNavigation({ waitUntil: "networkidle2" });
+  await delay(1000);
   console.log("🔐 Logged in to Google");
 };
 
@@ -89,56 +91,58 @@ const isLoggedIn = async (page) => {
 
 const attendanceChecker = async (meetLink, participantName) => {
   console.time();
-  //   const browser = await puppeteer.launch({
-  //     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-  //     headless: APP_ENV === "production",
-  //     args: [
-  //       "--start-maximized",
-  //       "--use-fake-ui-for-media-stream",
-  //       "--no-sandbox",
-  //       "--disable-setuid-sandbox",
-  //       "--headless=new", // or --headless=chrome or --headless if needed
-  //       "--disable-gpu",
-  //       "--disable-dev-shm-usage",
-  //       "--disable-software-rasterizer",
-  //     ],
-  //     defaultViewport: null,
-  //   });
+  let page = null;
+  let browser = null;
 
-  //   const page = await browser.newPage();
+  if (platform == "windows") {
+    browser = await puppeteer.launch({
+      headless: APP_ENV === "production",
+      args:
+        APP_ENV === "production"
+          ? [
+              "--start-maximized",
+              "--use-fake-ui-for-media-stream",
+              "--no-sandbox",
+              "--disable-setuid-sandbox",
+              "--headless=new", // or --headless=chrome or --headless if needed
+              "--disable-gpu",
+              "--disable-dev-shm-usage",
+              "--disable-software-rasterizer",
+            ]
+          : ["--start-maximized", "--use-fake-ui-for-media-stream"],
+      defaultViewport: null,
+    });
 
-  //    // 👇 Set your desired User-Agent string here
-  //    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36');
+    page = await browser.newPage();
+  } else {
+    const Xvfb = require("xvfb");
+    const xvfb = new Xvfb();
+    xvfb.startSync();
+    const chromeLauncher = await import("chrome-launcher");
+    const chrome = await chromeLauncher.launch({
+      chromePath: "/usr/bin/google-chrome-stable",
+      chromeFlags: [
+        "--start-maximized",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--start-maximized",
+        "--use-fake-ui-for-media-stream",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+      ],
+    });
 
-  const xvfb = new Xvfb();
-  xvfb.startSync();
-  const chromeLauncher = await import("chrome-launcher");
-  const chrome = await chromeLauncher.launch({
-    chromePath: "/usr/bin/google-chrome-stable",
-    chromeFlags: [
-      "--start-maximized",
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--start-maximized",
-      "--use-fake-ui-for-media-stream",
-      "--disable-gpu",
-      "--disable-dev-shm-usage",
-    ],
-  });
+    const response = await axios.get(
+      `http://localhost:${chrome.port}/json/version`
+    );
+    const { webSocketDebuggerUrl } = response.data;
 
-  const response = await axios.get(
-    `http://localhost:${chrome.port}/json/version`
-  );
-  const { webSocketDebuggerUrl } = response.data;
+    browser = await puppeteer.connect({
+      browserWSEndpoint: webSocketDebuggerUrl,
+    });
+    page = await browser.newPage();
+  }
 
-  const browser = await puppeteer.connect({
-    browserWSEndpoint: webSocketDebuggerUrl,
-  });
-  const page = await browser.newPage();
-
-  await page.setUserAgent(
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
-  );
   const hasCookies = await loadCookies(page);
 
   if (hasCookies) {
@@ -156,6 +160,12 @@ const attendanceChecker = async (meetLink, participantName) => {
     await saveCookies(page);
   }
 
+  const notValid = await isLoggedIn(page);
+
+  if (notValid) {
+    await browser.close();
+    return "❌ Invalid credentials or cookies";
+  }
   // Turn off mic
   try {
     await page.waitForSelector('div[jscontroller="dLMF9"]', { timeout: 8000 });

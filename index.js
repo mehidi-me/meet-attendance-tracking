@@ -35,7 +35,7 @@ app.post("/attendance", (req, res) => {
         return res
           .status(500)
           .send(
-            `Something went wrong. Please check the meeting link and participant name.`
+            `Something went wrong. ${result}`
           );
       }
     })
