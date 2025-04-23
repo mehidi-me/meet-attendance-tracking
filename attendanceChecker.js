@@ -1,5 +1,7 @@
 const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const axios = require("axios");
+const Xvfb = require("xvfb");
 const fs = require("fs").promises;
 require("dotenv").config();
 
@@ -87,27 +89,52 @@ const isLoggedIn = async (page) => {
 
 const attendanceChecker = async (meetLink, participantName) => {
   console.time();
-  const browser = await puppeteer.launch({
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-    headless: APP_ENV === "production",
-    args: [
-      "--start-maximized",
-      "--use-fake-ui-for-media-stream",
+//   const browser = await puppeteer.launch({
+//     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+//     headless: APP_ENV === "production",
+//     args: [
+//       "--start-maximized",
+//       "--use-fake-ui-for-media-stream",
+//       "--no-sandbox",
+//       "--disable-setuid-sandbox",
+//       "--headless=new", // or --headless=chrome or --headless if needed
+//       "--disable-gpu",
+//       "--disable-dev-shm-usage",
+//       "--disable-software-rasterizer",
+//     ],
+//     defaultViewport: null,
+//   });
+
+//   const page = await browser.newPage();
+
+//    // 👇 Set your desired User-Agent string here
+//    await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36');
+
+
+const xvfb = new Xvfb();
+  xvfb.startSync();
+  const chromeLauncher = (await import('chrome-launcher'));
+  const chrome = await chromeLauncher.launch({
+    chromePath: "/usr/bin/google-chrome-stable",
+    chromeFlags: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--headless=new", // or --headless=chrome or --headless if needed
+      "--start-maximized",
+      "--use-fake-ui-for-media-stream",
       "--disable-gpu",
-      "--disable-dev-shm-usage",
-      "--disable-software-rasterizer",
+      "--disable-dev-shm-usage"
     ],
-    defaultViewport: null,
   });
 
-  const page = await browser.newPage();
-  
-   // 👇 Set your desired User-Agent string here
-   await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36');
+  const response = await axios.get(`http://localhost:${chrome.port}/json/version`);
+  const { webSocketDebuggerUrl } = response.data;
 
+  const browser = await puppeteer.connect({ browserWSEndpoint: webSocketDebuggerUrl });
+  const page = await browser.newPage();
+
+  await page.setUserAgent(
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
+  );
   const hasCookies = await loadCookies(page);
 
   if (hasCookies) {
