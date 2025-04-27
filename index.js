@@ -25,7 +25,8 @@ app.get("/events", (req, res) => {
     })
     .catch((error) => {
       console.error("Error fetching events:", error);
-      return res.status(500).send("Error fetching events.");
+      return res.json([])
+      //return res.status(500).send("Error fetching events.");
     });
 });
 app.get("/", (req, res) => {
