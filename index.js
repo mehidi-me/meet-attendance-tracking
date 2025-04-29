@@ -30,7 +30,7 @@ app.get("/events", (req, res) => {
     })
     .catch((error) => {
       console.error("Error fetching events:", error);
-      return res.send("Please Authorize the app.");
+      return res.send("No upcoming events found. or Please Authorize the app.");
       //return res.status(500).send("Error fetching events.");
     });
 });
