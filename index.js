@@ -6,7 +6,7 @@ const attendanceChecker = require("./attendanceChecker.js");
 const express = require("express");
 const { getCalendarEvents } = require("./googleCalendar.js");
 const app = express();
-const port = 3000;
+const port = 3001;
 
 // Enable JSON body parsing
 app.use(express.json());
